@@ -1,159 +1,376 @@
-# CloudScript Technology DevOps Challenge
+# 🚀 EKS Challenge - Infraestrutura AWS com Terraform
 
-## 👋 Introdução
+Este projeto implementa uma infraestrutura básica na AWS utilizando Terraform, provisionando uma VPC customizada e um cluster Amazon EKS funcional.
 
-Obrigado pelo interesse em participar do processo seletivo da **CloudScript Technology**!
+## 📋 Visão Geral da Solução
 
-A **CloudScript Technology** é uma empresa especializada em **Platform Engineering**, com foco em **arquitetura de aplicações Cloud-Native em nível empresarial**. Atuamos ajudando organizações a **desenhar, operar e escalar plataformas modernas em nuvem**, priorizando **segurança, eficiência e automação**.
+A solução foi desenvolvida seguindo boas práticas de Infrastructure as Code (IaC), com código modular, reutilizável e bem documentado. A arquitetura implementada inclui:
 
-Este desafio foi elaborado para avaliar, de forma **prática e acessível**, os conceitos fundamentais de **DevOps**, **Infraestrutura como Código (IaC)** e **AWS**, considerando um perfil **DevOps Júnior**.
+- **VPC customizada** com CIDR configurável
+- **Subnets públicas e privadas** distribuídas em múltiplas zonas de disponibilidade
+- **NAT Gateways** para permitir acesso à internet das subnets privadas
+- **Cluster EKS** com configuração básica funcional
+- **Node Group gerenciado** com auto-scaling configurado
+- **Security Groups** adequados para comunicação entre componentes
+- **IAM Roles e Policies** seguindo o princípio de menor privilégio
 
-> ⚠️ **Importante:** não se preocupe caso não consiga resolver todos os pontos do desafio. Nosso objetivo é entender **seu raciocínio**, **organização do código** e **clareza na documentação das decisões**.
+## 🏗️ Arquitetura
 
-No mais, divirta-se e boa sorte no desafio! 🚀
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         AWS Region                          │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │                    VPC (10.0.0.0/16)                 │  │
+│  │                                                       │  │
+│  │  ┌──────────────────┐      ┌──────────────────┐     │  │
+│  │  │  Public Subnet   │      │  Public Subnet   │     │  │
+│  │  │   (AZ-1a)        │      │   (AZ-1b)        │     │  │
+│  │  │                  │      │                  │     │  │
+│  │  │  ┌────────────┐  │      │  ┌────────────┐  │     │  │
+│  │  │  │ NAT GW 1   │  │      │  │ NAT GW 2   │  │     │  │
+│  │  │  └────────────┘  │      │  └────────────┘  │     │  │
+│  │  └──────────────────┘      └──────────────────┘     │  │
+│  │         │                          │                 │  │
+│  │         └──────────┬───────────────┘                 │  │
+│  │                    │                                 │  │
+│  │              ┌─────▼─────┐                           │  │
+│  │              │ Internet  │                           │  │
+│  │              │  Gateway  │                           │  │
+│  │              └───────────┘                           │  │
+│  │                                                       │  │
+│  │  ┌──────────────────┐      ┌──────────────────┐     │  │
+│  │  │ Private Subnet   │      │ Private Subnet   │     │  │
+│  │  │   (AZ-1a)        │      │   (AZ-1b)        │     │  │
+│  │  │                  │      │                  │     │  │
+│  │  │  ┌────────────┐  │      │  ┌────────────┐  │     │  │
+│  │  │  │ EKS Nodes  │  │      │  │ EKS Nodes  │  │     │  │
+│  │  │  │ (Node      │  │      │  │ (Node      │  │     │  │
+│  │  │  │  Group)    │  │      │  │  Group)    │  │     │  │
+│  │  │  └────────────┘  │      │  └────────────┘  │     │  │
+│  │  └──────────────────┘      └──────────────────┘     │  │
+│  │                                                       │  │
+│  │              ┌─────────────────┐                     │  │
+│  │              │  EKS Cluster    │                     │  │
+│  │              │  Control Plane  │                     │  │
+│  │              └─────────────────┘                     │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
 
+### Componentes Principais
 
+1. **VPC (Virtual Private Cloud)**
+   - CIDR: 10.0.0.0/16 (configurável)
+   - DNS hostnames e DNS support habilitados
 
-## 🎯 Objetivo do Desafio
+2. **Subnets**
+   - **Públicas**: Para recursos que precisam de acesso direto à internet (NAT Gateways)
+   - **Privadas**: Para recursos que não precisam de acesso direto (EKS Nodes)
+   - Distribuídas em múltiplas zonas de disponibilidade para alta disponibilidade
 
-Criar uma infraestrutura básica na AWS, utilizando **Terraform ou Terragrunt**, capaz de provisionar:
+3. **Internet Gateway**
+   - Permite comunicação entre a VPC e a internet
 
-- Uma **VPC customizada**
-- Um **cluster Amazon EKS funcional**
+4. **NAT Gateways**
+   - Um por zona de disponibilidade
+   - Permite que recursos em subnets privadas acessem a internet para downloads e updates
 
-O foco do desafio **não é complexidade extrema**, mas sim:
-- Boas práticas
-- Organização
-- Clareza na implementação e documentação
+5. **EKS Cluster**
+   - Control plane gerenciado pela AWS
+   - Endpoints públicos e privados habilitados
+   - Logs de cluster habilitados (API, Audit, Authenticator, Controller Manager, Scheduler)
 
+6. **EKS Node Group**
+   - Instâncias EC2 gerenciadas pela AWS
+   - Auto-scaling configurável (min, max, desired)
+   - Localizado em subnets privadas
 
-## 🧪 O que deve ser feito
+7. **Security Groups**
+   - Cluster SG: Permite tráfego HTTPS (443) do VPC
+   - Node Group SG: Permite comunicação entre nodes e com o cluster
 
-1. Faça um **fork** deste repositório  
-2. Implemente a infraestrutura solicitada via IaC
-3. Envie uma **Pull Request (PR)** contendo:
+8. **IAM Roles**
+   - Cluster Role: Permissões para o control plane do EKS
+   - Node Group Role: Permissões para os nodes (Worker Node Policy, CNI Policy, ECR ReadOnly)
 
-   - Código Terraform funcional
-   - Um `README.md` explicando:
-     - Suas decisões técnicas
-     - Como o projeto foi estruturado
-     - Quais dificuldades encontrou
-   - Um **desenho/diagrama da arquitetura** (imagem ou link) explicando os serviços utilizados
+## 📁 Estrutura do Projeto
 
-4. Faça **commits ao longo do processo** (evite apenas um commit final)
+```
+terraform_test/
+├── main.tf                 # Configuração principal e chamadas dos módulos
+├── variables.tf            # Variáveis do projeto
+├── outputs.tf             # Outputs do projeto
+├── versions.tf            # Versões do Terraform e providers
+├── .gitignore            # Arquivos ignorados pelo Git
+├── README.md             # Este arquivo
+└── modules/
+    ├── vpc/
+    │   ├── main.tf        # Recursos da VPC
+    │   ├── variables.tf   # Variáveis do módulo VPC
+    │   └── outputs.tf     # Outputs do módulo VPC
+    └── eks/
+        ├── main.tf        # Recursos do EKS
+        ├── variables.tf   # Variáveis do módulo EKS
+        └── outputs.tf     # Outputs do módulo EKS
+```
 
-> Queremos entender seu **raciocínio**, não apenas o resultado final 🙂
+## 🚀 Como Executar
 
-## ⏱️ Tempo estimado
+### Pré-requisitos
 
-Tempo estimado para execução: **3 a 5 horas**.
+1. **AWS CLI** instalado e configurado
+   ```bash
+   aws --version
+   aws configure
+   ```
 
-## 🛠️ Requisitos Técnicos
+2. **Terraform** instalado (versão >= 1.5.0)
+   ```bash
+   terraform version
+   ```
 
-- AWS Provider
-- Uso de **modules** é bem-vindo (inclusive módulos públicos)
-- Código organizado, legível e reutilizável
-- Uso de **tags** nos recursos AWS
+3. **Credenciais AWS** configuradas com permissões adequadas para criar:
+   - VPC e recursos relacionados
+   - EKS clusters e node groups
+   - IAM roles e policies
+   - Security groups
+   - NAT Gateways e Elastic IPs
 
-## 🗄️ Estado do Terraform
+### Passos para Execução
 
-Não é obrigatório configurar backend remoto para o Terraform.  
-Caso não utilize, descreva no README como essa configuração seria feita em um ambiente real.
+1. **Clone o repositório** (ou navegue até o diretório)
+   ```bash
+   cd terraform_test
+   ```
 
-## 🏗️ Infraestrutura mínima esperada
+2. **Inicialize o Terraform**
+   ```bash
+   terraform init
+   ```
+   Este comando baixará os providers necessários e inicializará o backend.
 
-### VPC
-- CIDR customizado
-- Subnets públicas e/ou privadas
+3. **Revise o plano de execução**
+   ```bash
+   terraform plan
+   ```
+   Este comando mostrará todos os recursos que serão criados, modificados ou destruídos.
 
-### Cluster EKS
-- Node Group (managed ou auto-managed)
-- Configuração básica para funcionamento do cluster
+4. **Aplique a configuração**
+   ```bash
+   terraform apply
+   ```
+   Digite `yes` quando solicitado para confirmar a criação dos recursos.
 
-## 📖 Documentação (README do candidato)
+   ⚠️ **Atenção**: A criação do cluster EKS pode levar de 10 a 20 minutos.
 
-No `README.md` do seu fork, inclua:
+5. **Configure o kubectl** (após o apply)
+   ```bash
+   aws eks update-kubeconfig --region us-east-1 --name eks-challenge-dev-cluster
+   ```
+   Ou use o output do Terraform:
+   ```bash
+   terraform output -raw configure_kubectl
+   ```
 
-- Visão geral da solução
-- Explicação da arquitetura
-- Como executar o Terraform (`init`, `plan`, `apply`)
-- Decisões técnicas tomadas
-- Pontos de melhoria identificados
+6. **Verifique o cluster**
+   ```bash
+   kubectl get nodes
+   kubectl get pods --all-namespaces
+   ```
+
+7. **Destrua os recursos** (quando terminar)
+   ```bash
+   terraform destroy
+   ```
+   ⚠️ **Importante**: Execute este comando para evitar custos desnecessários na AWS.
+
+## ⚙️ Configuração e Variáveis
+
+### Variáveis Principais
+
+As variáveis podem ser configuradas através de:
+- Arquivo `terraform.tfvars` (não versionado)
+- Variáveis de ambiente (`TF_VAR_*`)
+- Valores padrão no arquivo `variables.tf`
+
+Principais variáveis:
+
+| Variável | Descrição | Padrão |
+|----------|-----------|--------|
+| `aws_region` | Região AWS | `us-east-1` |
+| `project_name` | Nome do projeto | `eks-challenge` |
+| `environment` | Ambiente (dev/staging/prod) | `dev` |
+| `vpc_cidr` | CIDR da VPC | `10.0.0.0/16` |
+| `availability_zones` | Zonas de disponibilidade | `["us-east-1a", "us-east-1b"]` |
+| `eks_cluster_version` | Versão do Kubernetes | `1.28` |
+| `eks_node_instance_types` | Tipos de instância dos nodes | `["t3.medium"]` |
+| `eks_node_desired_size` | Número desejado de nodes | `2` |
+| `eks_node_min_size` | Número mínimo de nodes | `1` |
+| `eks_node_max_size` | Número máximo de nodes | `3` |
+
+### Exemplo de terraform.tfvars
+
+```hcl
+aws_region            = "us-east-1"
+project_name          = "my-eks-project"
+environment           = "dev"
+vpc_cidr              = "10.0.0.0/16"
+availability_zones    = ["us-east-1a", "us-east-1b"]
+eks_cluster_version   = "1.28"
+eks_node_instance_types = ["t3.medium"]
+eks_node_desired_size = 2
+eks_node_min_size     = 1
+eks_node_max_size     = 3
+```
+
+## 🎯 Decisões Técnicas
+
+### 1. Modularização
+- **Decisão**: Separar VPC e EKS em módulos distintos
+- **Justificativa**: Facilita reutilização, manutenção e testes. Cada módulo tem responsabilidade única.
+
+### 2. Subnets Públicas e Privadas
+- **Decisão**: Usar subnets privadas para EKS nodes e públicas para NAT Gateways
+- **Justificativa**: Segurança - nodes não expostos diretamente à internet, mas com acesso outbound via NAT.
+
+### 3. Múltiplas Zonas de Disponibilidade
+- **Decisão**: Distribuir recursos em pelo menos 2 AZs
+- **Justificativa**: Alta disponibilidade e resiliência a falhas.
+
+### 4. NAT Gateway por AZ
+- **Decisão**: Criar um NAT Gateway por zona de disponibilidade
+- **Justificativa**: Alta disponibilidade e melhor performance. Em produção, considere custos vs. benefícios.
+
+### 5. EKS Node Group Gerenciado
+- **Decisão**: Usar Managed Node Group ao invés de Self-Managed
+- **Justificativa**: Menos overhead operacional, patches automáticos, melhor integração com AWS.
+
+### 6. Security Groups Restritivos
+- **Decisão**: Configurar security groups com regras mínimas necessárias
+- **Justificativa**: Segurança - princípio do menor privilégio.
+
+### 7. Tags Consistentes
+- **Decisão**: Aplicar tags em todos os recursos usando `default_tags` e tags explícitas
+- **Justificativa**: Facilita gestão de custos, compliance e organização.
+
+### 8. Logs do Cluster Habilitados
+- **Decisão**: Habilitar logs do control plane do EKS
+- **Justificativa**: Observabilidade e troubleshooting facilitados.
+
+## 🔒 Backend do Terraform
+
+### Estado Local (Atual)
+
+O projeto está configurado para usar backend local (padrão do Terraform). O arquivo de estado (`terraform.tfstate`) é armazenado localmente.
+
+### Backend Remoto (Recomendado para Produção)
+
+Em um ambiente real de produção, recomenda-se usar um backend remoto. Exemplo de configuração:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "my-terraform-state-bucket"
+    key            = "eks-challenge/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "terraform-state-lock"
+  }
+}
+```
+
+**Benefícios do backend remoto:**
+- Estado compartilhado entre membros da equipe
+- Locking de estado (evita conflitos)
+- Versionamento do estado
+- Backup automático
+- Integração com CI/CD
+
+**Configuração necessária:**
+1. Criar bucket S3 para armazenar o estado
+2. Criar tabela DynamoDB para locking
+3. Configurar políticas IAM adequadas
+4. Adicionar a configuração acima no `versions.tf`
+
+## 🐛 Dificuldades Encontradas
+
+1. **Configuração de Security Groups**
+   - **Desafio**: Garantir comunicação adequada entre cluster e nodes
+   - **Solução**: Criar security groups específicos e configurar regras de ingress/egress apropriadas
+
+2. **IAM Roles e Policies**
+   - **Desafio**: Entender quais políticas são necessárias para EKS funcionar corretamente
+   - **Solução**: Seguir documentação oficial da AWS e usar managed policies quando possível
+
+3. **Dependências entre Recursos**
+   - **Desafio**: Garantir ordem correta de criação (VPC → Subnets → EKS)
+   - **Solução**: Usar `depends_on` explicitamente e aproveitar dependências implícitas do Terraform
+
+4. **Cálculo de CIDRs para Subnets**
+   - **Desafio**: Calcular CIDRs corretamente para múltiplas subnets
+   - **Solução**: Usar função `cidrsubnet()` do Terraform para cálculo automático
+
+## 📊 Pontos de Melhoria
+
+### Para Ambiente de Produção
+
+1. **Segurança**
+   - Implementar Network ACLs adicionais
+   - Restringir endpoints públicos do EKS (usar apenas privado com VPN/Bastion)
+   - Habilitar encryption at rest para EBS volumes dos nodes
+   - Implementar AWS WAF e Shield para proteção adicional
+   - Usar AWS Secrets Manager para credenciais
+   - Implementar Pod Security Policies/Standards
+
+2. **Observabilidade**
+   - Integrar CloudWatch Container Insights
+   - Configurar Prometheus e Grafana
+   - Implementar logging centralizado (ELK Stack ou CloudWatch Logs)
+   - Configurar alertas e dashboards
+   - Implementar distributed tracing
+
+3. **Escalabilidade**
+   - Implementar Cluster Autoscaler
+   - Configurar Horizontal Pod Autoscaler (HPA)
+   - Considerar Fargate para workloads serverless
+   - Implementar múltiplos node groups com diferentes instance types
+   - Configurar Spot Instances para workloads tolerantes a interrupções
+
+4. **CI/CD**
+   - Integrar com GitHub Actions, GitLab CI ou Jenkins
+   - Implementar GitOps com ArgoCD ou Flux
+   - Automatizar testes de infraestrutura (Terratest)
+   - Implementar policy-as-code (OPA, Checkov)
+
+5. **Backup e Disaster Recovery**
+   - Configurar backup de volumes EBS
+   - Implementar estratégia de backup do etcd
+   - Documentar procedimentos de DR
+   - Testar regularmente procedimentos de failover
+
+6. **Custos**
+   - Implementar Reserved Instances ou Savings Plans
+   - Usar Spot Instances onde apropriado
+   - Monitorar e otimizar custos com AWS Cost Explorer
+   - Implementar tags de custo mais detalhadas
+   - Considerar NAT Instance ao invés de NAT Gateway para reduzir custos (trade-off com HA)
+
+7. **Governança**
+   - Implementar AWS Organizations e SCPs
+   - Configurar AWS Config para compliance
+   - Implementar AWS Control Tower
+   - Estabelecer políticas de tagging obrigatórias
+
+## 📚 Referências Utilizadas
+
+- [Terraform AWS Provider Documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [Amazon EKS User Guide](https://docs.aws.amazon.com/eks/latest/userguide/)
+- [AWS VPC Best Practices](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-best-practices.html)
+- [Conventional Commits](https://www.conventionalcommits.org/)
+- [Terraform Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html)
 
 ---
 
-## 🧠 Para a entrevista
+**⚠️ Lembrete**: Sempre execute `terraform destroy` após concluir os testes para evitar custos desnecessários na AWS.
 
-Prepare anotações pessoais contendo:
-
-- Melhorias que você faria na infraestrutura
-- O que adicionaria em um cenário real de produção
-- Pontos relacionados a:
-  - Segurança
-  - Observabilidade
-  - Escalabilidade
-
-> ⚠️ **Não inclua essas anotações na Pull Request.**  
-> Elas serão discutidas durante a entrevista.
-
----
-
-## 📤 Entrega
-- Certifique-se de que a **Pull Request esteja aberta**
-
----
-
-## 💰 Custos de AWS
-
-Para a realização deste desafio, **não é necessário manter os recursos provisionados ativos**. A criação da infraestrutura pode ser realizada exclusivamente para fins de validação técnica, devendo os recursos ser removidos após a conclusão do teste.
-
-A **CloudScript Technology** não se responsabiliza, nem realiza reembolso, por quaisquer custos, tarifas ou encargos eventualmente gerados na conta AWS de titularidade do candidato durante a execução do desafio. Ao participar do processo seletivo, o candidato declara estar ciente e de acordo com estas condições.
-
-Recomenda-se que o candidato:
-- Utilize uma conta AWS pessoal ou destinada a testes
-- Execute `terraform destroy` ao finalizar a validação
-- Monitore o faturamento da AWS durante a execução
-
-
-## 📊 Critérios de Avaliação
-
-O desafio será avaliado com base em:
-
-- Organização e estrutura do código
-- Clareza e qualidade da documentação
-- Uso de boas práticas de IaC
-- Entendimento básico de AWS e EKS
-- Capacidade de justificar decisões técnicas
-
-## 🚫 Fora do escopo
-
-Os itens abaixo **não são obrigatórios** para este desafio:
-
-- Deploy de aplicações no EKS
-- Configuração de CI/CD
-- Observabilidade avançada
-- Hardening completo de segurança
-- Ambientes múltiplos (staging/produção)
-
-
-## 🔗 Referências
-
-Os links abaixo podem ser utilizados como apoio durante o desenvolvimento do desafio:
-
-https://conventionalcommits.org
-
-https://github.com/terraform-docs/terraform-docs
-
-https://developer.hashicorp.com/terraform/cli/commands/validate
-
-https://github.com/terraform-linters/tflint
-
-https://github.com/aquasecurity/tfsec
-
-https://terragrunt.gruntwork.io
-
-## 💬 Considerações finais
-
-Este desafio não é sobre acertar tudo, mas sobre mostrar seu processo de aprendizado, organização e comunicação técnica.
-
-Boa sorte e esperamos conversar com você em breve! 🚀
