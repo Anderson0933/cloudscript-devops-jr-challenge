@@ -322,6 +322,20 @@ Para múltiplos ambientes, usar diferentes `key` paths (ex: `eks-challenge/dev/t
    - **Desafio**: Calcular CIDRs corretamente para múltiplas subnets
    - **Solução**: Usar função `cidrsubnet()` do Terraform para cálculo automático
 
+## 📊 Pontos de Melhoria Identificados
+
+Esta seção lista brevemente os principais pontos de melhoria que seriam implementados em um ambiente de produção real:
+
+- **Segurança**: Implementar Network ACLs, restringir endpoints públicos do EKS, habilitar encryption at rest, usar AWS Secrets Manager
+- **Observabilidade**: Integrar CloudWatch Container Insights, configurar Prometheus/Grafana, implementar logging centralizado e alertas
+- **Escalabilidade**: Implementar Cluster Autoscaler, configurar HPA, considerar Fargate e múltiplos node groups
+- **CI/CD**: Integrar pipelines automatizados, implementar GitOps, adicionar testes de infraestrutura
+- **Backup e DR**: Configurar backups de EBS, implementar estratégia de backup do etcd, documentar procedimentos de DR
+- **Custos**: Implementar Reserved Instances, usar Spot Instances onde apropriado, otimizar custos com Cost Explorer
+- **Governança**: Implementar AWS Organizations, configurar AWS Config para compliance, estabelecer políticas de tagging
+
+> ⚠️ **Nota**: Anotações detalhadas sobre melhorias serão discutidas durante a entrevista técnica.
+
 ## 📚 Referências Utilizadas
 
 - [Terraform AWS Provider Documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
