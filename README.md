@@ -360,5 +360,5 @@ Esta seção lista brevemente os principais pontos de melhoria que seriam implem
 
 ---
 
-**⚠️ Lembrete**: Sempre execute `terraform destroy` após concluir os testes para evitar custos desnecessários na AWS.
+Sempre execute `terraform destroy` após concluir os testes para evitar custos desnecessários na AWS.
 
